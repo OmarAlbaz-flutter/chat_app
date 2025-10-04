@@ -8,14 +8,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class ChatPage extends StatelessWidget {
-  ChatPage({super.key});
+class ChatPage extends StatefulWidget {
+const ChatPage({super.key});
   static String id = 'ChatPage';
 
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
   CollectionReference messages =
       FirebaseFirestore.instance.collection(kMessageCollection);
 
   final ScrollController controller = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     var email = ModalRoute.of(context)?.settings.arguments as String? ??

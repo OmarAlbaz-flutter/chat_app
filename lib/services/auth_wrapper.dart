@@ -1,6 +1,5 @@
 import 'package:chat_app/screens/chat_page.dart';
-import 'package:chat_app/screens/register_page.dart';
-
+import 'package:chat_app/screens/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -32,11 +31,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
             ),
           );
         }
-
         if (!snapshot.hasData) {
-          return const RegisterPage();
+          return LoginPage();
         }
-        final user = snapshot.data!;
         return ChatPage();
       },
     );

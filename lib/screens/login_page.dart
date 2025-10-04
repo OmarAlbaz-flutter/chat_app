@@ -1,186 +1,159 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:chat_app/constants.dart';
+import 'package:chat_app/cubits/login_cubit/login_cubit.dart';
 import 'package:chat_app/screens/chat_page.dart';
 import 'package:chat_app/screens/register_page.dart';
 import 'package:chat_app/widgets/custom_button.dart';
 import 'package:chat_app/helper/show_snackbar.dart';
 import 'package:chat_app/widgets/custom_form_text_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LoginPage extends StatelessWidget {
+  LoginPage({super.key});
+  String? email, password;
   static String id = 'LoginPage';
 
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  String? email, password;
-
   bool isLoading = false;
+  AutovalidateMode autovalidateMode = AutovalidateMode.onUserInteraction;
 
   GlobalKey<FormState> formKey = GlobalKey();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  @override
-  void dispose() {
-    passwordController.dispose();
-    emailController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return ModalProgressHUD(
-      inAsyncCall: isLoading,
-      child: Scaffold(
-        backgroundColor: kPrimaryColor,
-        body: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-          ),
-          child: Form(
-            key: formKey,
-            child: SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 200,
-                    ),
-                    Image.asset(
-                      kLogo,
-                      height: 300,
-                      width: 300,
-                      fit: BoxFit.cover,
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "Log In",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CustomTextFormField(
-                      controller: emailController,
-                      validator: (data) {
-                        if (data == null || data.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        return null;
-                      },
-                      onChanged: (data) {
-                        email = data;
-                      },
-                      labelText: 'Email Address',
-                      hintText: "Email",
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CustomTextFormField(
-                      controller: passwordController,
-                      validator: (data) {
-                        if (data == null || data.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
-                      obscureText: true,
-                      onChanged: (data) {
-                        password = data;
-                      },
-                      labelText: 'Password',
-                      hintText: "Password",
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CustomButton(
-                      onTap: () async {
-                        if (formKey.currentState!.validate()) {
-                          isLoading = true;
-                          setState(() {});
-                          try {
-                            await loginUser();
+    return BlocConsumer<LoginCubit, LoginState>(
+      listener: (context, state) {
+        if (state is LoginLoading) {
+          isLoading = true;
+        } else if (state is LoginSuccess) {
+          isLoading = false;
+          Navigator.of(context).pushNamed(ChatPage.id, arguments: email);
+        } else if (state is LoginFailure) {
+          isLoading = false;
 
-                            Navigator.of(context).pushReplacementNamed(
-                              ChatPage.id,
-                              arguments: email,
-                            );
-                          } on FirebaseAuthException catch (e) {
-                            if (e.code == 'user-not-found') {
-                              showSnackBar(context, "Email Not Found.");
-                            } else if (e.code == 'wrong-password') {
-                              showSnackBar(context, "Wrong email or password.");
-                            }
-                          } catch (e) {
-                            showSnackBar(context, e.toString());
-                          }
-                          isLoading = false;
-                          setState(() {});
-                        } else {
-                          return;
-                        }
-                      },
-                      centerText: "Log in",
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "don't have an account?   ",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushNamed(
-                              RegisterPage.id,
-                              arguments: email,
-                            );
-                          },
-                          child: Text(
-                            "Register",
+          showSnackBar(context, state.errMessage);
+        }
+      },
+      builder: (context, state) => ModalProgressHUD(
+        inAsyncCall: isLoading,
+        child: Scaffold(
+          backgroundColor: kPrimaryColor,
+          body: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+            ),
+            child: Form(
+              autovalidateMode: autovalidateMode,
+              key: formKey,
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        kLogo,
+                        height: 400,
+                        width: 300,
+                        fit: BoxFit.contain,
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            "Log In",
                             style: TextStyle(
-                              color: kSecondaryColor,
+                              fontSize: 24,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      CustomTextFormField(
+                        controller: TextEditingController(),
+                        validator: (data) {
+                          if (data == null || data.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          return null;
+                        },
+                        onChanged: (data) {
+                          email = data;
+                        },
+                        labelText: 'Email Address',
+                        hintText: "Email",
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      CustomTextFormField(
+                        controller: TextEditingController(),
+                        validator: (data) {
+                          if (data == null || data.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                        obscureText: true,
+                        onChanged: (data) {
+                          password = data;
+                        },
+                        labelText: 'Password',
+                        hintText: "Password",
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      CustomButton(
+                        onTap: () async {
+                          if (formKey.currentState!.validate()) {
+                            BlocProvider.of<LoginCubit>(context)
+                                .loginUser(email: email!, password: password!);
+                          } else {
+                            return;
+                          }
+                        },
+                        centerText: "Log in",
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "don't have an account?   ",
+                            style: TextStyle(
+                              color: Colors.white,
                               fontSize: 14,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pushNamed(
+                                RegisterPage.id,
+                                arguments: email,
+                              );
+                            },
+                            child: Text(
+                              "Register",
+                              style: TextStyle(
+                                color: kSecondaryColor,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> loginUser() async {
-    final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: email!,
-      password: password!,
     );
   }
 }
